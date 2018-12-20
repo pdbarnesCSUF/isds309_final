@@ -30,10 +30,9 @@ namespace isdsfinal
             string strRedactCC = "";
 
             //bank reporting
-            string reportBank = "";
-            int reportTotalCard = 0;
-            int reportTotalLimit = 0;
-            int reportAverageLimit = 0;
+            string[] reportBank = { "Bank of America", "Chase", "Citibank", "Wells Fargo" };
+            int[,] reportNumbers = new int[4, 3];
+            //card,limit,average
 
             //logging
             string logPath = "CreditCardLog.txt";
@@ -197,72 +196,60 @@ namespace isdsfinal
                         status = false; //valid bank choice
                         // Bank report
                         WriteLine("---Bank Report---");
-                        WriteLine("1: Bank of America");
-                        WriteLine("2: Chase");
-                        WriteLine("3: Citibank");
-                        WriteLine("4: Wells Fargo");
-                        Write("Pick a Bank:");
-                        choice = ReadLine();
-                        switch (choice)
-                        {
-                            case "1": //Bank of america
-                                reportBank = "Bank of America";
-                                status = true;
-                                break;
-                            case "2": //Chase
-                                reportBank = "Chase";
-                                status = true;
-                                break;
-                            case "3": //Citibank
-                                reportBank = "Citibank";
-                                status = true;
-                                break;
-                            case "4": //Wells Fargo
-                                reportBank = "Wells Fargo";
-                                status = true;
-                                break;
-                            default:
-                                WriteLine("Invalid choice");
-                                break;
-                        }
-                        if (status) //valid choice
-                        {
-                            //reset vars
-                            reportTotalCard = 0;
-                            reportTotalLimit = 0;
-                            reportAverageLimit = 0;
+                        //reset vars
+                        reportNumbers = new int[4, 3]; //quick but very dirty way to 0 it out
                             
-                            //search / calc
-                            for (int i = 0; i < inDataRows; ++i)
+                        //search / calc
+                        for (int i = 0; i < inDataRows; ++i)
+                        {
+                            switch (inData[i, 2])
                             {
-                                if (inData[i,2] == reportBank)
-                                {
-                                    ++reportTotalCard;
-                                    reportTotalLimit += int.Parse(inData[i, 5]);
-                                }
+                                case "Bank of America":
+                                    ++reportNumbers[0, 0];
+                                    reportNumbers[0, 1] += int.Parse(inData[i, 5]);
+                                    break;
+                                case "Chase":
+                                    ++reportNumbers[1, 0];
+                                    reportNumbers[1, 1] += int.Parse(inData[i, 5]);
+                                    break;
+                                case "Citibank":
+                                    ++reportNumbers[2, 0];
+                                    reportNumbers[2, 1] += int.Parse(inData[i, 5]);
+                                    break;
+                                case "Wells Fargo":
+                                    ++reportNumbers[3, 0];
+                                    reportNumbers[3, 1] += int.Parse(inData[i, 5]);
+                                    break;
+                                default:
+                                    //nothing, skip
+                                    break;
                             }
-                            reportAverageLimit = reportTotalLimit / reportTotalCard;
-                            
-                            //output to screen
-                            WriteLine("Bank Name: {0}", reportBank);
-                            WriteLine("Total Cards: {0,10}", reportTotalCard);
-                            WriteLine("Total Limit: {0,10}", reportTotalLimit);
-                            WriteLine("Avg Limit  : {0,10}", reportAverageLimit);
-                            
-                            //also to file...
-                            string reportPath = "BankReport_" + DateTime.Now.ToString("yyyyMMdd_hhmmss") + ".txt";
-                            FileStream reportFile = new FileStream(reportPath, FileMode.Create, FileAccess.Write);
-                            StreamWriter reportStream = new StreamWriter(reportFile);
-                            reportStream.WriteLine("Bank Name: {0}", reportBank);
-                            reportStream.WriteLine("Total Cards: {0,10}", reportTotalCard);
-                            reportStream.WriteLine("Total Limit: {0,10}", reportTotalLimit);
-                            reportStream.WriteLine("Avg Limit  : {0,10}", reportAverageLimit);
-                            reportStream.Close();
-                            reportFile.Close();
-                            
-                            //log
-                            logWriter.WriteLine(DateTime.Now.ToString("yyyy-MM-dd_hh:mm:ss") + ",BANK");
                         }
+                        //calc average
+                        for (int i = 0; i < 4; ++i)
+                            reportNumbers[i, 2] = reportNumbers[i, 1] / reportNumbers[i, 0];
+                        
+                        //prep file...
+                        string reportPath = "BankReport_" + DateTime.Now.ToString("yyyyMMdd_hhmmss") + ".txt";
+                        FileStream reportFile = new FileStream(reportPath, FileMode.Create, FileAccess.Write);
+                        StreamWriter reportStream = new StreamWriter(reportFile);
+
+                        //output to screen/File
+                        //headers first
+                        WriteLine("{0,17}{1,10}{2,12}{3,12}", "Bank Name", "Ttl Cards", "Ttl Limit", "Avg Limit");
+                        reportStream.WriteLine("{0,17}{1,10}{2,12}{3,12}", "Bank Name", "Ttl Cards", "Ttl Limit", "Avg Limit");
+                        //rows
+                        for (int i = 0; i < 4; ++i)
+                        {
+                            WriteLine("{0,17}{1,10}{2,12}{3,12}", reportBank[i], reportNumbers[i,0], reportNumbers[i,1], reportNumbers[i, 2]);
+                            reportStream.WriteLine("{0,17}{1,10}{2,12}{3,12}", reportBank[i], reportNumbers[i, 0], reportNumbers[i, 1], reportNumbers[i, 2]);
+                        }
+                        //done with file
+                        reportStream.Close();
+                        reportFile.Close();
+                            
+                        //log
+                        logWriter.WriteLine(DateTime.Now.ToString("yyyy-MM-dd_hh:mm:ss") + ",BANK");
                         break;//case bank
                     //--------------------------
                     //  QUIT    exiting
